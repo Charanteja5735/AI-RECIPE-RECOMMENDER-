@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Find Your Recipe - AI Recipe Recommender</title>
+  <link
+    href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <style>
+    body, html {
+      margin: 0; padding: 0; font-family: 'Arial', sans-serif; color: white; overflow-x: hidden;
+    }
+    body {
+        background: 
+            linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)),
+            url('https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1740&q=80')
+            no-repeat center center fixed;
+        background-size: cover;
+    }
+    .navbar-brand span { color: #ffc107; }
+    .content-wrapper { padding: 40px 0; }
+    h1, h2 { font-weight: bold; }
+    .lead { font-size: 1.25rem; font-weight: 300; }
+    .form-check-label, label, button, .close-btn { cursor: pointer; }
+    .checkbox-grid, .radio-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+    #time-value { color: #ffc107; font-weight: bold; font-size: 1.2rem; min-width: 100px; display: inline-block; text-align: center; }
+    .ingredient-tags { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 20px; padding: 15px; background-color: rgba(44, 48, 52, 0.8); border-radius: 8px; min-height: 60px; }
+    .tag { background-color: #ffc107; color: #212529; padding: 5px 15px; border-radius: 20px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
+    .tag .close-btn { font-weight: bolder; }
+    
+    /* Animation Styles */
+    .form-container, .results-container {
+        transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+    }
+    .form-container.zoom-out {
+        transform: scale(0.95);
+        opacity: 0;
+        pointer-events: none;
+    }
+    .results-container {
+        display: none;
+        transform: scale(0.95);
+        opacity: 0;
+    }
+    .results-container.visible { display: block; }
+    .results-container.zoom-in { transform: scale(1); opacity: 1; }
+    
+    /* Recipe Card & Modal Styles */
+    .recipe-card {
+        background: #343a40;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .recipe-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    }
+    .modal-content {
+      background-color: #212529;
+      color: white;
+      border: 1px solid #ffc107;
+    }`<script> src="backend/recipe-backend-server.js"></script>`
+    .modal-header { border-bottom: 1px solid #444; }
+    .modal-footer { border-top: 1px solid #444; }
+    #modal-recipe-procedure { list-style-position: inside; padding-left: 0; }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <a class="navbar-brand" href="index.html">AI Recipe <span>Recommender</span></a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ml-auto">
+              <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+              <li class="nav-item"><a class="nav-link" href="menu.html">Menu</a></li>
+              <li class="nav-item"><a class="nav-link" href="feedback.html">Feedback</a></li>
+              <li class="nav-item"><a class="nav-link" href="login.html">Login</a></li>
+              <li class="nav-item"><a class="nav-link" href="about.html">About</a></li>
+              <li class="nav-item"><a class="nav-link" href="contact.html">Contact</a></li>
+          </ul>
+      </div>
+  </nav>
+
+  <div class="content-wrapper">
+    <div class="container text-center">
+
+      <!-- FORM CONTAINER -->
+      <div id="form-container" class="form-container">
+        <h1>Let's Find Your Perfect Recipe</h1>
+        <p class="lead text-muted mb-5">Tell us a bit more about what you have available.</p>
+        <form id="recipe-form">
+          <!-- Form sections... -->
+          <div class="form-section text-left mb-5">
+            <h2>1. What are your main ingredients?</h2>
+            <div class="input-group mb-3"><input type="text" id="ingredient-input" class="form-control" placeholder="e.g., chicken, tomato, rice..."><div class="input-group-append"><button class="btn btn-outline-warning" type="button" id="add-ingredient-btn">Add</button></div></div>
+            <div class="ingredient-tags" id="ingredient-tags-container"></div>
+          </div>
+          <div class="form-section text-left mb-5">
+            <h2>2. Any dietary preferences?</h2>
+            <div class="p-3 bg-dark rounded radio-group">
+                <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="dietPreference" id="diet1" value="any" checked><label class="form-check-label" for="diet1">No Preference</label></div>
+                <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="dietPreference" id="diet2" value="vegetarian"><label class="form-check-label" for="diet2">Vegetarian</label></div>
+                <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="dietPreference" id="diet3" value="vegan"><label class="form-check-label" for="diet3">Vegan</label></div>
+                <div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="dietPreference" id="diet4" value="non-veg"><label class="form-check-label" for="diet4">Non-Vegetarian</label></div>
+            </div>
+          </div>
+          <div class="form-section text-left mb-5">
+            <h2>3. Which spices do you have?</h2>
+            <div class="checkbox-grid p-3 bg-dark rounded" id="spices-grid"></div>
+          </div>
+          <div class="form-section text-left mb-5">
+            <h2>4. What equipment can you use?</h2>
+            <div class="checkbox-grid p-3 bg-dark rounded" id="equipment-grid"></div>
+          </div>
+          <div class="form-section text-left mb-5">
+            <h2>5. How much time do you have?</h2>
+            <div class="d-flex align-items-center bg-dark p-3 rounded"><input type="range" class="custom-range" id="time-slider" min="15" max="120" step="5" value="60"><span id="time-value" class="ml-3">60 mins</span></div>
+          </div>
+          <button type="submit" class="btn btn-warning btn-lg mt-4">Find My Recipes!</button>
+        </form>
+      </div>
+
+      <!-- RESULTS CONTAINER (Initially hidden) -->
+      <div id="results-container" class="results-container">
+        <h1 class="mb-4">Here's What We Found For You</h1>
+        <div id="recipe-cards-container" class="row"></div>
+        <button id="search-again-btn" class="btn btn-outline-light mt-5">Search Again</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Recipe Modal -->
+  <div class="modal fade" id="recipeModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modal-recipe-name">Recipe Title</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true" class="text-white">×</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <img id="modal-recipe-image" src="" class="img-fluid rounded mb-4" alt="Recipe Image">
+          <h5>Ingredients</h5>
+          <ul id="modal-recipe-ingredients" class="list-unstyled"></ul>
+          <hr class="bg-secondary">
+          <h5>Procedure</h5>
+          <ol id="modal-recipe-procedure"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // --- DATABASE ---
+    const recipeDatabase = [
+      {
+        id: 'chilli_omelette',
+        name: 'Spicy Chilli Omelette',
+        diet: 'vegetarian',
+        time: 15,
+        ingredients: ['egg', 'onion', 'chilli', 'salt', 'pepper', 'oil'],
+        equipment: ['bowl', 'frying pan'],
+        procedure: ['Finely chop the onion and green chilli.','In a bowl, crack two eggs. Add the chopped onion, chilli, and a pinch of salt and pepper.','Whisk the mixture vigorously with a fork until it is light and slightly frothy.','Heat a little oil or butter in a non-stick frying pan over medium heat.','Pour the egg mixture into the hot pan. Let it cook for about 1-2 minutes until the edges start to set.','Gently push the cooked edges towards the center, allowing the uncooked egg to flow to the sides.','Once the top is almost set, fold the omelette in half using a spatula.','Cook for another 30 seconds to 1 minute, then slide it onto a plate and serve hot.'],
+        imageUrl: 'https://images.unsplash.com/photo-1582912443216-f34b6389735d?auto=format&fit=crop&w=800&q=60'
+      },
+      {
+        id: 'tomato_pasta',
+        name: 'Simple Tomato Pasta',
+        diet: 'vegan',
+        time: 20,
+        ingredients: ['pasta', 'tomato', 'onion', 'garlic', 'oil', 'salt', 'pepper', 'oregano'],
+        equipment: ['pot / saucepan', 'frying pan'],
+        procedure: ['Boil pasta in a pot of heavily salted water according to package directions until al dente.','While pasta cooks, heat oil in a frying pan over medium heat. Sauté chopped onion and garlic until soft and fragrant, about 5 minutes.','Add chopped tomatoes, salt, pepper, and oregano. Let the sauce simmer for 10 minutes until it thickens slightly.','Drain the cooked pasta, reserving a small amount of pasta water. Add the pasta to the sauce and toss to combine. If the sauce is too thick, add a splash of the reserved pasta water.','Serve immediately, garnished with fresh basil if desired.'],
+        imageUrl: 'https://images.unsplash.com/photo-1598866594240-a314a7562065?auto=format&fit=crop&w=800&q=60'
+      },
+      {
+        id: 'garlic_chicken',
+        name: 'Garlic Butter Chicken',
+        diet: 'non-veg',
+        time: 30,
+        ingredients: ['chicken', 'butter', 'garlic', 'salt', 'pepper', 'chilli'],
+        equipment: ['frying pan'],
+        procedure: ['Pat the chicken breasts dry and season generously on both sides with salt and pepper.','In a large frying pan, melt butter over medium-high heat. Add minced garlic and cook for about 1 minute until fragrant, but not browned.','Place the chicken breasts in the pan. Cook for 6-8 minutes on the first side, until golden brown.','Flip the chicken, reduce heat to medium, and cook for another 6-8 minutes, or until the chicken is cooked through (internal temperature of 165°F or 74°C).','Spoon the garlic butter sauce from the pan over the chicken. Garnish with fresh chopped parsley before serving.'],
+        imageUrl: 'https://images.unsplash.com/photo-1604329263662-58142ab14f7b?auto=format&fit=crop&w=800&q=60'
+      },
+      {
+        id: 'veg_omelette',
+        name: 'Vegetable Omelette',
+        diet: 'vegetarian',
+        time: 15,
+        ingredients: ['egg', 'milk', 'onion', 'cheese', 'butter', 'salt', 'pepper'],
+        equipment: ['frying pan', 'bowl'],
+        procedure: ['In a medium bowl, crack the eggs and add a splash of milk. Whisk vigorously until the mixture is light and frothy. Season with salt and pepper.','Melt butter in a non-stick frying pan over medium heat. Add finely chopped onion and chilli powder and sauté until softened, about 3-4 minutes.','Pour the egg mixture over the vegetables in the pan, tilting the pan to ensure an even layer.','Let the eggs cook without stirring until the edges begin to set. Using a spatula, gently push the cooked edges towards the center and tilt the pan to allow uncooked egg to flow underneath.','Once the omelette is nearly set but still slightly moist on top, sprinkle shredded cheese over one half.','Fold the other half of the omelette over the cheese-covered side. Cook for another minute, then slide it onto a plate.'],
+        imageUrl: 'https://images.unsplash.com/photo-1490645935967-10de6ba17025?auto=format&fit=crop&w=800&q=60'
+      },
+      {
+        id: 'baked_fish',
+        name: 'Oven-Baked fish',
+        diet: 'non-veg',
+        time: 25,
+        ingredients: ['fish', 'lemon', 'oil', 'garlic', 'salt', 'pepper', 'chilli'],
+        equipment: ['oven', 'baking sheet'],
+        procedure: ['Preheat your oven to 400°F (200°C). Line a baking sheet with parchment paper.','Place the salmon fillet, skin-side down, on the prepared baking sheet.','In a small bowl, mix together oil, minced garlic, and salt & pepper.','Brush this mixture evenly over the top of the salmon fillet.','Arrange thin lemon slices on top of the salmon and sprinkle with dill.','Bake for 12-15 minutes, or until the salmon is cooked through and flakes easily with a fork. Be careful not to overcook.'],
+        imageUrl: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=800&q=60'
+      },
+      // --- NEW RECIPES START HERE ---
+      {
+        id: 'chicken_curry',
+        name: 'Classic Chicken Curry',
+        diet: 'non-veg',
+        time: 40,
+        ingredients: ['chicken', 'onion', 'tomato', 'garlic', 'ginger', 'coriander', 'turmeric', 'cumin', 'oil', 'salt'],
+        equipment: ['pot / saucepan', 'frying pan'],
+        procedure: ['Heat oil in a pot. Sauté chopped onions until golden. Add ginger-garlic paste and cook for one minute.','Add chopped tomatoes and cook until softened. Stir in the spice powders: turmeric, coriander, and cumin.','Add the chicken pieces and sear on all sides. Add 1 cup of water, cover, and let it simmer for 20-25 minutes until the chicken is cooked through.','Garnish with fresh cilantro and serve with rice or naan.'],
+        imageUrl: 'https://images.unsplash.com/photo-1631292784024-d6db238a417b?auto=format&fit=crop&w=800&q=60'
+      },
+      {
+        id: 'lentil_soup',
+        name: 'Hearty Lentil Soup',
+        diet: 'vegan',
+        time: 45,
+        ingredients: ['lentils', 'carrot', 'celery', 'onion', 'garlic', 'vegetable broth', 'salt', 'pepper', 'cumin', 'oil'],
+        equipment: ['pot / saucepan'],
+        procedure: ['Heat oil in a large pot or Dutch oven over medium heat. Add chopped onion, carrot, and celery. Cook until softened, about 5-7 minutes.','Add minced garlic and cumin and cook for another minute until fragrant.','Rinse the lentils and add them to the pot along with the vegetable broth. Bring to a boil.','Reduce heat, cover, and let the soup simmer for 30-35 minutes, or until the lentils are tender.','Season with salt and pepper to taste. For a creamier soup, you can use a blender to blend a portion of it.'],
+        imageUrl: 'https://images.unsplash.com/photo-1621852004133-9a126b8b0933?auto=format&fit=crop&w=800&q=60'
+      },
+      {
+        id: 'bean_quesadilla',
+        name: 'Black Bean & Corn Quesadilla',
+        diet: 'vegetarian',
+        time: 15,
+        ingredients: ['roti', 'beans', 'corn', 'cheese', 'chilli powder', 'onion'],
+        equipment: ['frying pan', 'bowl'],
+        procedure: ['In a bowl, mix together canned (drained) black beans, corn, chopped onion, and a sprinkle of chilli powder.','Place a tortilla in a dry, non-stick frying pan over medium heat. Sprinkle a layer of cheese over the entire surface.','Spread the bean and corn mixture over one half of the tortilla.','When the cheese is melted and the tortilla is golden on the bottom, fold the other half over the filling.','Press down gently with a spatula and cook for another minute until heated through. Slice into wedges and serve with salsa or sour cream.'],
+        imageUrl: 'https://images.unsplash.com/photo-1615937691174-a9689e49a15c?auto=format&fit=crop&w=800&q=60'
+      },
+      {
+        id: 'shrimp_stirfry',
+        name: 'prawns fry',
+        diet: 'non-veg',
+        time: 20,
+        ingredients: ['prawns', 'broccoli', 'pepper', 'garlic', 'ginger', 'oil'],
+        equipment: ['frying pan', 'bowl'],
+        procedure: ['In a small bowl, whisk together soy sauce, minced garlic, and grated ginger.','Heat oil in a large frying pan or wok over high heat. Add the shrimp and cook for 1-2 minutes until they turn pink. Remove the shrimp from the pan.','Add the broccoli and chilli powder florets to the hot pan. Stir-fry for 3-4 minutes until crisp-tender.','Return the shrimp to the pan and pour the sauce over everything. Toss to combine and cook for one more minute until the sauce thickens slightly.','Serve immediately over rice.'],
+        imageUrl: 'https://images.unsplash.com/photo-1596201736440-6c61b6859523?auto=format&fit=crop&w=800&q=60'
+      },
+      {
+        id: 'mashed_potatoes',
+        name: 'Creamy Mashed Potatoes',
+        diet: 'vegetarian',
+        time: 25,
+        ingredients: ['potato', 'butter', 'milk', 'salt', 'pepper'],
+        equipment: ['pot / saucepan', 'bowl'],
+        procedure: ['Peel the potatoes and cut them into even-sized chunks. Place them in a pot and cover with cold, salted water.','Bring the water to a boil and cook for 15-20 minutes, until the potatoes are very tender when pierced with a fork.','Drain the potatoes well and return them to the hot pot to evaporate any excess moisture for a minute.','Mash the potatoes until smooth. Add butter, milk, salt, and pepper, and stir vigorously until the mash is creamy.','Taste and adjust seasoning if necessary. Serve hot.'],
+        imageUrl: 'https://images.unsplash.com/photo-1619684177651-325881f19d81?auto=format&fit=crop&w=800&q=60'
+      }
+    ];
+
+    // --- DYNAMICALLY POPULATE CHECKBOXES ---
+    const availableSpices = ['salt', 'pepper', 'garlic powder', 'onion powder', 'paprika', 'cumin', 'turmeric', 'oregano', 'chilli', 'chilli powder', 'coriander', 'ginger', 'oil'];
+    const availableEquipment = ['frying pan', 'pot / saucepan', 'oven', 'microwave', 'blender', 'baking sheet', 'bowl'];
+    
+    const spicesGrid = document.getElementById('spices-grid');
+    const equipmentGrid = document.getElementById('equipment-grid');
+    
+    availableSpices.forEach((item, index) => {
+        spicesGrid.innerHTML += `<div class="form-check"><input class="form-check-input" type="checkbox" id="spice${index}" value="${item.toLowerCase()}"><label class="form-check-label" for="spice${index}">${item.charAt(0).toUpperCase() + item.slice(1)}</label></div>`;
+    });
+    availableEquipment.forEach((item, index) => {
+        equipmentGrid.innerHTML += `<div class="form-check"><input class="form-check-input" type="checkbox" id="util${index}" value="${item.toLowerCase()}"><label class="form-check-label" for="util${index}">${item.charAt(0).toUpperCase() + item.slice(1)}</label></div>`;
+    });
+
+    // --- FORM LOGIC ---
+    const ingredientInput = document.getElementById('ingredient-input');
+    const addIngredientBtn = document.getElementById('add-ingredient-btn');
+    const tagsContainer = document.getElementById('ingredient-tags-container');
+    let mainIngredients = [];
+
+    const renderTags = () => {
+        tagsContainer.innerHTML = '';
+        mainIngredients.forEach(ingredient => {
+            const tag = document.createElement('div');
+            tag.className = 'tag';
+            tag.innerHTML = `${ingredient}<span class="close-btn" data-ingredient="${ingredient}">×</span>`;
+            tagsContainer.appendChild(tag);
+        });
+    };
+
+    const addIngredient = () => {
+        const ingredient = ingredientInput.value.trim().toLowerCase();
+        if (ingredient && !mainIngredients.includes(ingredient)) {
+            mainIngredients.push(ingredient);
+            ingredientInput.value = '';
+            renderTags();
+        }
+    };
+
+    addIngredientBtn.addEventListener('click', addIngredient);
+    ingredientInput.addEventListener('keypress', (e) => e.key === 'Enter' && (e.preventDefault(), addIngredient()));
+
+    tagsContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('close-btn')) {
+            const ingredientToRemove = e.target.getAttribute('data-ingredient');
+            mainIngredients = mainIngredients.filter(ing => ing !== ingredientToRemove);
+            renderTags();
+        }
+    });
+
+    const timeSlider = document.getElementById('time-slider');
+    const timeValue = document.getElementById('time-value');
+    timeSlider.addEventListener('input', (e) => {
+        timeValue.textContent = `${e.target.value} mins`;
+    });
+
+    // --- SEARCH AND DISPLAY LOGIC ---
+    const recipeForm = document.getElementById('recipe-form');
+    const formContainer = document.getElementById('form-container');
+    const resultsContainer = document.getElementById('results-container');
+    const recipeCardsContainer = document.getElementById('recipe-cards-container');
+    const searchAgainBtn = document.getElementById('search-again-btn');
+
+    recipeForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const userTime = parseInt(timeSlider.value, 10);
+        const userDiet = document.querySelector('input[name="dietPreference"]:checked').value;
+        const userEquipment = Array.from(document.querySelectorAll('#equipment-grid input:checked')).map(el => el.value);
+        
+        const matchedRecipes = recipeDatabase.filter(recipe => {
+            if (recipe.time > userTime) return false;
+            
+            if (userDiet === 'vegetarian' && recipe.diet === 'non-veg') return false;
+            if (userDiet === 'vegan' && (recipe.diet === 'non-veg' || recipe.diet === 'vegetarian')) return false;
+            if (userDiet === 'non-veg' && (recipe.diet === 'vegan' || recipe.diet === 'vegetarian')) return false;
+
+            if (!recipe.equipment.every(item => userEquipment.includes(item))) return false;
+            if (mainIngredients.length > 0 && !recipe.ingredients.some(ing => mainIngredients.includes(ing))) return false;
+            
+            return true;
+        });
+        
+        displayResults(matchedRecipes);
+        animateToResults();
+    });
+
+    function displayResults(recipes) {
+        recipeCardsContainer.innerHTML = '';
+        if (recipes.length === 0) {
+            recipeCardsContainer.innerHTML = '<div class="col-12"><p class="lead text-muted">Sorry, no recipes matched your criteria. Try being less restrictive or adding more ingredients!</p></div>';
+            return;
+        }
+
+        recipes.forEach(recipe => {
+            const cardHtml = `
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card text-white recipe-card h-100" data-toggle="modal" data-target="#recipeModal" data-recipe-id="${recipe.id}">
+                        <img src="${recipe.imageUrl}" class="card-img-top" alt="${recipe.name}" style="height: 180px; object-fit: cover;">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">${recipe.name}</h5>
+                            <p class="card-text text-muted mt-auto">Time: ${recipe.time} mins | Diet: ${recipe.diet}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            recipeCardsContainer.innerHTML += cardHtml;
+        });
+    }
+
+    function animateToResults() {
+        formContainer.classList.add('zoom-out');
+        setTimeout(() => {
+            formContainer.style.display = 'none';
+            resultsContainer.classList.add('visible');
+            setTimeout(() => resultsContainer.classList.add('zoom-in'), 50);
+        }, 500);
+    }
+    
+    searchAgainBtn.addEventListener('click', () => {
+        resultsContainer.classList.remove('zoom-in');
+        setTimeout(() => {
+            resultsContainer.classList.remove('visible');
+            resultsContainer.style.display = 'none';
+            formContainer.style.display = 'block';
+            setTimeout(() => formContainer.classList.remove('zoom-out'), 50);
+        }, 500);
+    });
+
+    $('#recipeModal').on('show.bs.modal', function (event) {
+        const card = $(event.relatedTarget);
+        const recipeId = card.data('recipe-id');
+        const recipeData = recipeDatabase.find(r => r.id === recipeId);
+        
+        const modal = $(this);
+        if (recipeData) {
+            modal.find('.modal-title').text(recipeData.name);
+            modal.find('#modal-recipe-image').attr('src', recipeData.imageUrl);
+            
+            const ingredientsList = modal.find('#modal-recipe-ingredients');
+            ingredientsList.empty();
+            recipeData.ingredients.forEach(ing => ingredientsList.append(`<li>- ${ing.charAt(0).toUpperCase() + ing.slice(1)}</li>`));
+
+            const procedureList = modal.find('#modal-recipe-procedure');
+            procedureList.empty();
+            recipeData.procedure.forEach(step => procedureList.append(`<li>${step}</li>`));
+        }
+    });
+  </script>
+</body>
+</html>
